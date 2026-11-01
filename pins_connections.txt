@@ -1,0 +1,10 @@
+"+" line in the breadboard -> 3.3V (pin 1);
+"-" line in the breadboard -> pin 9;
+HCSR04(Vcc) -> "+" line in the breadboard;
+HCSR04 (TRIG) -> GPIO4 (pin 7);
+HCSR04 (ECHO) -> GPIO17 (pin 11);
+HCSR04 (GND) -> "-" line in the breadboard;
+Display (Vcc) -> "+" line in the breadboard;
+Display (GND) -> "-" line in the breadboard;
+Display (SDA) -> GPIO2 (pin 3)
+Display (SDL) -> GPIO3 (pin 5)
