@@ -1,6 +1,12 @@
 
-import RPi.GPIO as GPIO
+import atexit
+import logging
+import statistics
 import time
+
+import RPi.GPIO as GPIO
+
+logger = logging.getLogger(__name__)
 
 # Set GPIO Pins (BCM numbering)
 TRIG = 4
@@ -8,22 +14,45 @@ ECHO = 17
 ECHO_TIMEOUT = 0.04
 MIN_DISTANCE_CM = 2
 MAX_DISTANCE_CM = 450
+MEDIAN_SAMPLES = 5
+# Idle time between measurements: lets echoes of the previous burst die out
+# (the HC-SR04 datasheet recommends >= 60 ms between cycles).
+SETTLE_TIME = 0.06
+
+_gpio_ready = False
+
 
 def setup_gpio():
+    """Configure the pins once; later calls do nothing.
+
+    Cleanup is registered with atexit so the pins are released when the
+    program ends, including on Ctrl+C.
+    """
+    global _gpio_ready
+    if _gpio_ready:
+        return
+
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(TRIG, GPIO.OUT)
     GPIO.setup(ECHO, GPIO.IN)
     GPIO.output(TRIG, False)
+    _gpio_ready = True
+    atexit.register(cleanup_gpio)
+    logger.info("GPIO initialised (TRIG=BCM%d, ECHO=BCM%d)", TRIG, ECHO)
 
 
 def cleanup_gpio():
-    GPIO.cleanup()
+    global _gpio_ready
+    if _gpio_ready:
+        GPIO.cleanup()
+        _gpio_ready = False
+        logger.info("GPIO released")
 
 
 def distance():
     # Set TRIG to LOW
     GPIO.output(TRIG, False)
-    time.sleep(1)
+    time.sleep(SETTLE_TIME)
 
     # Send 10us pulse to TRIG
     GPIO.output(TRIG, True)
@@ -57,26 +86,56 @@ def distance():
     return distance
 
 
+def median_distance(samples=MEDIAN_SAMPLES):
+    """Median of several measurements, which rejects isolated outliers.
+
+    Failed samples are logged and skipped. If none succeeds, the last error
+    is raised so the caller sees why the sensor failed.
+    """
+    values = []
+    last_error = None
+    for _ in range(samples):
+        try:
+            values.append(distance())
+        except (TimeoutError, ValueError) as error:
+            last_error = error
+            logger.debug("Discarded sample: %s", error)
+
+    if not values:
+        raise last_error
+
+    result = statistics.median(values)
+    logger.debug("Median %.1f cm from %d/%d valid samples", result, len(values), samples)
+    return result
+
+
 def read_distance_cm():
-    """Read one distance in centimetres and release the GPIO pins."""
-    try:
-        setup_gpio()
-        return distance()
-    finally:
-        cleanup_gpio()
+    """Read one filtered distance in centimetres.
+
+    Initialises the GPIO on first use, so callers do not need to know about it.
+    """
+    setup_gpio()
+    return median_distance()
 
 
 if __name__ == '__main__':
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
     print("Distance Measurement In Progress")
+    setup_gpio()
     try:
         while True:
             try:
                 dist = read_distance_cm()
                 print("Measured Distance = %.1f cm" % dist)
             except TimeoutError as error:
-                print(error)
+                logger.warning("%s", error)
             except ValueError as error:
-                print("Measurement failed:", error)
+                logger.warning("Measurement failed: %s", error)
             time.sleep(1)
     except KeyboardInterrupt:
         print("Measurement stopped by User")
+    finally:
+        cleanup_gpio()
