@@ -12,9 +12,16 @@ logger = logging.getLogger(__name__)
 TRIG = 4
 ECHO = 17
 ECHO_TIMEOUT = 0.04
-MIN_DISTANCE_CM = 2
+# The datasheet gives 2 cm as the minimum range, but with an object touching
+# the sensor it reported 2.4-4.4 cm (dead zone and multiple reflections),
+# so nothing closer than 5 cm is trusted.
+MIN_DISTANCE_CM = 5
 MAX_DISTANCE_CM = 450
 MEDIAN_SAMPLES = 5
+# A real target gives samples within a few mm of each other (std dev 0.08 cm
+# measured); a wider spread or too few valid samples means an unreliable reading.
+MIN_VALID_SAMPLES = 3
+MAX_SAMPLE_SPREAD_CM = 2
 # Idle time between measurements: lets echoes of the previous burst die out
 # (the HC-SR04 datasheet recommends >= 60 ms between cycles).
 SETTLE_TIME = 0.06
@@ -90,7 +97,9 @@ def median_distance(samples=MEDIAN_SAMPLES):
     """Median of several measurements, which rejects isolated outliers.
 
     Failed samples are logged and skipped. If none succeeds, the last error
-    is raised so the caller sees why the sensor failed.
+    is raised so the caller sees why the sensor failed. If too few samples
+    are valid or they disagree too much, the reading is rejected with a
+    ValueError instead of returning a number that cannot be trusted.
     """
     values = []
     last_error = None
@@ -103,6 +112,18 @@ def median_distance(samples=MEDIAN_SAMPLES):
 
     if not values:
         raise last_error
+
+    if len(values) < MIN_VALID_SAMPLES:
+        raise ValueError(
+            f"Unreliable reading: only {len(values)} of {samples} samples valid "
+            f"(need {MIN_VALID_SAMPLES})"
+        )
+    spread = max(values) - min(values)
+    if spread > MAX_SAMPLE_SPREAD_CM:
+        raise ValueError(
+            f"Unstable reading: samples differ by {spread:.1f} cm "
+            f"(max {MAX_SAMPLE_SPREAD_CM} cm)"
+        )
 
     result = statistics.median(values)
     logger.debug("Median %.1f cm from %d/%d valid samples", result, len(values), samples)
