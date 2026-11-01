@@ -1,0 +1,22 @@
+[Unit]
+Description=TP2 distance monitor (HC-SR04 + web page)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=copilot
+# GPIO access without root
+SupplementaryGroups=gpio
+WorkingDirectory=/home/copilot/TP2_PSE
+ExecStart=/usr/bin/python3 -u webpage.py
+# Keep running without manual intervention, e.g. after an unexpected exit.
+# Exit code 1 (port busy) is retried every 5 s.
+Restart=always
+RestartSec=5
+# Logs go to the journal: journalctl -u tp2-webpage -f
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
