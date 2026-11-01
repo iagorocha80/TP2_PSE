@@ -1,0 +1,19 @@
+HC-SR04 ECHO timing measurement
+===============================
+Date:               2026-11-01 21:31:48
+Samples:            200 (200 ok)
+Reference distance: not set (static scene)
+Speed of sound:     343 m/s
+Settle time:        60 ms before each TRIG pulse
+ECHO timeout:       40 ms
+Pins:               TRIG BCM 4, ECHO BCM 17
+
+                                  mean     std dev      median         min         max
+Distance                         15.69        0.08       15.69       15.38       16.52  cm
+ECHO duration                      915           5         915         897         963  us
+ECHO latency                      2215           2        2214        2207        2230  us
+TRIG pulse (req. 10 us)             93          11          94          74         162  us
+Cycle time                        63.3         0.0        63.3        63.3        63.5  ms
+
+ECHO latency = TRIG falling edge to ECHO rising edge.
+Polling resolution: 316 loop iterations per pulse, about 2.9 us each, i.e. a distance step of about 0.05 cm.
