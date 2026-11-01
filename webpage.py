@@ -23,31 +23,70 @@ PAGE = """<!doctype html>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Distance monitor</title>
   <style>
-    html, body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
+    * {
+      box-sizing: border-box;
     }
     body {
+      min-height: 100vh;
+      margin: 0;
       display: grid;
       place-items: center;
-      background: white;
-      font: 1.25rem sans-serif;
+      padding: 1rem;
+      background: #f4f4f4;
+      color: #222;
+      font-family: Arial, sans-serif;
     }
-    #reading {
-      box-sizing: border-box;
-      min-width: 16rem;
-      padding: 2rem;
-      background: blue;
-      color: white;
+    .monitor {
+      width: min(100%, 24rem);
+      overflow: hidden;
+      border: 1px solid #d5d5d5;
+      border-radius: 0.75rem;
+      background: #fff;
+      box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 12%);
+    }
+    .monitor-header {
+      padding: 0.85rem 1rem;
+      background: #315fc2;
+      color: #fff;
       text-align: center;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+    .reading {
+      min-height: 9rem;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 0.55rem;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .reading-label {
+      color: #666;
+      font-size: 0.95rem;
+    }
+    #reading-value {
+      font-size: clamp(2rem, 10vw, 2.5rem);
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+    #reading-value.error {
+      color: #b42318;
+      font-size: 1rem;
+      font-weight: 600;
     }
   </style>
 </head>
 <body>
-  <main id="reading" aria-live="polite">Waiting for sensor...</main>
+  <main class="monitor" aria-label="Distance monitor">
+    <header class="monitor-header">Distance Monitor</header>
+    <section class="reading" aria-live="polite">
+      <div class="reading-label">Distance</div>
+      <div id="reading-value">Waiting for sensor...</div>
+    </section>
+  </main>
   <script>
-    const banner = document.getElementById("reading");
+    const readingValue = document.getElementById("reading-value");
 
     async function updateReading() {
       try {
@@ -57,19 +96,23 @@ PAGE = """<!doctype html>
         }
 
         const data = await response.json();
-        const text = data.error
-          || (data.distance_cm === null
+        const hasError = Boolean(data.error);
+        const text = hasError
+          ? data.error
+          : (data.distance_cm === null
             ? "Waiting for sensor..."
             : `${Number(data.distance_cm).toFixed(1)} cm`);
 
-        if (banner.textContent !== text) {
-          banner.textContent = text;
+        if (readingValue.textContent !== text) {
+          readingValue.textContent = text;
         }
+        readingValue.classList.toggle("error", hasError);
       } catch (error) {
         const text = `Web error: ${error.message}`;
-        if (banner.textContent !== text) {
-          banner.textContent = text;
+        if (readingValue.textContent !== text) {
+          readingValue.textContent = text;
         }
+        readingValue.classList.add("error");
       }
     }
 
