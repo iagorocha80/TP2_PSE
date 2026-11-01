@@ -1,0 +1,8 @@
+# Python dependencies (pip install -r requirements.txt)
+#
+# RPi.GPIO is not listed: it comes with Raspberry Pi OS / Debian
+# (sudo apt install python3-rpi.gpio) and pip cannot see that installation.
+Flask>=3.0
+# OLED driver; installs Pillow, which writeDisplay.py also uses (>= 10.1)
+luma.oled>=3.12
+Pillow>=10.1

@@ -1,0 +1,23 @@
+[Unit]
+Description=TP2 OLED display (shows the data of tp2-webpage)
+After=tp2-webpage.service
+Wants=tp2-webpage.service
+
+[Service]
+Type=simple
+User=copilot
+# I2C access without root
+SupplementaryGroups=i2c
+WorkingDirectory=/home/copilot/TP2_PSE
+# luma.oled is installed in the virtual environment created by run.sh
+ExecStart=/home/copilot/TP2_PSE/.venv/bin/python -u writeDisplay.py
+# The program already retries when the OLED or the web server is missing;
+# this also restarts it after an unexpected exit.
+Restart=always
+RestartSec=5
+# Logs go to the journal: journalctl -u tp2-display -f
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
