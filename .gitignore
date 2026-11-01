@@ -3,3 +3,4 @@ __pycache__/
 server_status.json
 server_status.json.tmp
 readHCSR_*.txt
+report/
