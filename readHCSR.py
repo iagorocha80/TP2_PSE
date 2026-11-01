@@ -29,6 +29,17 @@ SETTLE_TIME = 0.06
 _gpio_ready = False
 
 
+class DistanceOutOfBounds(ValueError):
+    """The measured distance is outside MIN_DISTANCE_CM..MAX_DISTANCE_CM."""
+
+    def __init__(self, distance_cm, suffix=""):
+        super().__init__(
+            f"Distance out of bounds: {distance_cm:.1f} cm "
+            f"(valid range: {MIN_DISTANCE_CM}-{MAX_DISTANCE_CM} cm){suffix}"
+        )
+        self.distance_cm = distance_cm
+
+
 def setup_gpio():
     """Configure the pins once; later calls do nothing.
 
@@ -75,7 +86,12 @@ def distance():
     deadline = start_time + ECHO_TIMEOUT
     while GPIO.input(ECHO) == 1:
         if time.monotonic() >= deadline:
-            raise TimeoutError("Timed out waiting for ECHO to go LOW")
+            # ECHO stuck HIGH is what the sensor does with no usable echo, e.g. when
+            # covered: it cannot tell "too close" from "too far"
+            raise TimeoutError(
+                f"Out of range: no valid echo (closer than {MIN_DISTANCE_CM} cm "
+                f"or farther than {MAX_DISTANCE_CM / 100:g} m)"
+            )
     stop_time = time.monotonic()
 
     # Time difference between start and arrival
@@ -85,10 +101,7 @@ def distance():
     distance = (time_elapsed * 34300) / 2
 
     if not MIN_DISTANCE_CM <= distance <= MAX_DISTANCE_CM:
-        raise ValueError(
-            f"Distance out of bounds: {distance:.1f} cm "
-            f"(valid range: {MIN_DISTANCE_CM}-{MAX_DISTANCE_CM} cm)"
-        )
+        raise DistanceOutOfBounds(distance)
 
     return distance
 
@@ -100,16 +113,29 @@ def median_distance(samples=MEDIAN_SAMPLES):
     is raised so the caller sees why the sensor failed. If too few samples
     are valid or they disagree too much, the reading is rejected with a
     ValueError instead of returning a number that cannot be trusted.
+
+    An out-of-bounds sample takes priority over a timeout when reporting a
+    rejected reading, since it says what the sensor actually measured.
     """
     values = []
+    out_of_bounds = []
     last_error = None
     for _ in range(samples):
         try:
             values.append(distance())
+        except DistanceOutOfBounds as error:
+            out_of_bounds.append(error)
+            last_error = error
+            logger.debug("Discarded sample: %s", error)
         except (TimeoutError, ValueError) as error:
             last_error = error
             logger.debug("Discarded sample: %s", error)
 
+    if len(values) < MIN_VALID_SAMPLES and out_of_bounds:
+        raise DistanceOutOfBounds(
+            out_of_bounds[-1].distance_cm,
+            suffix=f", {len(out_of_bounds)} of {samples} samples",
+        )
     if not values:
         raise last_error
 
