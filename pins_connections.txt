@@ -6,5 +6,5 @@ HCSR04 (ECHO) -> GPIO17 (pin 11);
 HCSR04 (GND) -> "-" line in the breadboard;
 Display (Vcc) -> "+" line in the breadboard;
 Display (GND) -> "-" line in the breadboard;
-Display (SDA) -> GPIO2 (pin 3)
-Display (SDL) -> GPIO3 (pin 5)
+Display (SDA) -> GPIO2 (pin 3);
+Display (SDL) -> GPIO3 (pin 5);
