@@ -62,13 +62,13 @@ def distance():
     deadline = time.monotonic() + ECHO_TIMEOUT
     while GPIO.input(ECHO) == 0:
         if time.monotonic() >= deadline:
-            raise TimeoutError("Sensor error: timed out waiting for ECHO to go HIGH")
+            raise TimeoutError("Timed out waiting for ECHO to go HIGH")
     start_time = time.monotonic()
 
     deadline = start_time + ECHO_TIMEOUT
     while GPIO.input(ECHO) == 1:
         if time.monotonic() >= deadline:
-            raise TimeoutError("Sensor error: timed out waiting for ECHO to go LOW")
+            raise TimeoutError("Timed out waiting for ECHO to go LOW")
     stop_time = time.monotonic()
 
     # Time difference between start and arrival
@@ -130,10 +130,8 @@ if __name__ == '__main__':
             try:
                 dist = read_distance_cm()
                 print("Measured Distance = %.1f cm" % dist)
-            except TimeoutError as error:
-                logger.warning("%s", error)
-            except ValueError as error:
-                logger.warning("Measurement failed: %s", error)
+            except (TimeoutError, ValueError) as error:
+                logger.warning("Sensor error: %s", error)
             time.sleep(1)
     except KeyboardInterrupt:
         print("Measurement stopped by User")

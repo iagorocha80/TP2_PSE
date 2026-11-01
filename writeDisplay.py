@@ -129,8 +129,7 @@ def render_data(draw, data):
             label = f"ERROR {age_s:.0f}s"
         draw_header(draw, "Distance", label)
         draw.text((0, 14), big_text, font=FONT_MEDIUM, fill=1)
-        # The sensor module already prefixes its messages with "Sensor error:"
-        text = str(data.get("error")).removeprefix("Sensor error: ")
+        text = str(data.get("error"))
         draw_lines(draw, wrap_text(draw, text, FONT_SMALL, 3), 34)
         return
 
