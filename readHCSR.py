@@ -7,9 +7,6 @@ TRIG = 4
 ECHO = 17
 ECHO_TIMEOUT = 0.04
 
-print("Distance Measurement In Progress")
-
-
 def setup_gpio():
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(TRIG, GPIO.OUT)
@@ -51,17 +48,25 @@ def distance():
 
     return distance
 
+
+def read_distance_cm():
+    """Read one distance in centimetres and release the GPIO pins."""
+    try:
+        setup_gpio()
+        return distance()
+    finally:
+        cleanup_gpio()
+
+
 if __name__ == '__main__':
+    print("Distance Measurement In Progress")
     try:
         while True:
             try:
-                setup_gpio()
-                dist = distance()
+                dist = read_distance_cm()
                 print("Measured Distance = %.1f cm" % dist)
             except TimeoutError as error:
                 print("Measurement failed:", error)
-            finally:
-                cleanup_gpio()
             time.sleep(1)
     except KeyboardInterrupt:
         print("Measurement stopped by User")
