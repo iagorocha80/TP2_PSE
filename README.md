@@ -5,13 +5,13 @@ web page served by the Raspberry Pi.
 
 ## Hardware
 
-| Part | Raspberry Pi pin |
+| Part | Connection |
 |---|---|
+| Breadboard "+" rail | 3.3 V (pin 1); powers the HC-SR04 and the OLED |
+| Breadboard "-" rail | GND (pin 9); GND of the HC-SR04 and the OLED |
 | HC-SR04 TRIG | BCM 4 (pin 7) |
-| HC-SR04 ECHO | BCM 17 (pin 11), through a divider of two 100 kOhm resistors |
+| HC-SR04 ECHO | BCM 17 (pin 11), direct: the sensor runs at 3.3 V, so no voltage divider |
 | OLED SDA / SCL | BCM 2 / BCM 3 (pins 3 / 5), I2C bus 1, address 0x3C |
-| OLED VCC | 3.3 V (pin 17) |
-| GND (sensor, divider, OLED) | pin 6, 9 or 14 |
 
 Enable I2C once (`sudo raspi-config` > Interface Options > I2C) and make sure
 the user is in the `gpio` and `i2c` groups. `python3 scan_i2c.py` lists the
