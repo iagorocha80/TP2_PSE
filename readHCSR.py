@@ -16,7 +16,9 @@ ECHO_TIMEOUT = 0.04
 # the sensor it reported 2.4-4.4 cm (dead zone and multiple reflections),
 # so nothing closer than 5 cm is trusted.
 MIN_DISTANCE_CM = 5
-MAX_DISTANCE_CM = 450
+MAX_DISTANCE_CM = 400
+# Speed of sound used by the datasheet of the module (340 m/s)
+SPEED_OF_SOUND_CM_S = 34000
 MEDIAN_SAMPLES = 5
 # A real target gives samples within a few mm of each other (std dev 0.08 cm
 # measured); a wider spread or too few valid samples means an unreliable reading.
@@ -96,9 +98,9 @@ def distance():
 
     # Time difference between start and arrival
     time_elapsed = stop_time - start_time
-    # Multiply with speed of sound (34300 cm/s)
+    # Multiply with speed of sound (34000 cm/s)
     # and divide by 2, because there and back
-    distance = (time_elapsed * 34300) / 2
+    distance = (time_elapsed * SPEED_OF_SOUND_CM_S) / 2
 
     if not MIN_DISTANCE_CM <= distance <= MAX_DISTANCE_CM:
         raise DistanceOutOfBounds(distance)

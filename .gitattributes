@@ -1,0 +1,5 @@
+# Left out of `git archive` (the zip for the lecturer): not part of the evaluated code
+Assignment2_evaluation_RPI.pdf export-ignore
+pins_connections.txt export-ignore
+.gitattributes export-ignore
+.gitignore export-ignore
