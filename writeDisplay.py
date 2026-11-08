@@ -15,6 +15,8 @@ import urllib.request
 
 from PIL import Image, ImageDraw, ImageFont
 
+from ssd1306_raw import RawOled
+
 logger = logging.getLogger(__name__)
 
 API_URL = "http://localhost:5000/api/data"
@@ -156,21 +158,15 @@ def render_frame(data, reason):
     return image
 
 
-def open_display(driver, address):
+def open_display(address):
     """Open the OLED over I2C, or return None (and log why) if that fails."""
-    # Imported here so the rendering code can be tested without luma installed
-    from luma.core.interface.serial import i2c
-    from luma.oled.device import sh1106, ssd1306
-
-    device_class = {"ssd1306": ssd1306, "sh1106": sh1106}[driver]
     try:
-        serial = i2c(port=I2C_PORT, address=address)
-        device = device_class(serial, width=WIDTH, height=HEIGHT)
-    except Exception as error:
-        # DeviceNotFoundError (no /dev/i2c-N), OSError (no ACK at the address)...
+        device = RawOled(I2C_PORT, address, WIDTH, HEIGHT)
+    except OSError as error:
+        # No /dev/i2c-N, no permission, or no ACK at the address
         logger.error("OLED not available at 0x%02X on I2C bus %d: %s", address, I2C_PORT, error)
         return None
-    logger.info("OLED opened (%s, bus %d, address 0x%02X)", driver, I2C_PORT, address)
+    logger.info("OLED opened (bus %d, address 0x%02X)", I2C_PORT, address)
     return device
 
 
@@ -180,7 +176,7 @@ def run(args):
 
     while True:
         if device is None:
-            device = open_display(args.driver, args.address)
+            device = open_display(args.address)
             if device is None:
                 time.sleep(REOPEN_PERIOD_SECONDS)
                 continue
@@ -206,6 +202,10 @@ def run(args):
             device.display(render_frame(data, reason))
         except OSError as error:
             logger.error("I2C write to the OLED failed: %s", error)
+            try:
+                device.close()
+            except OSError:
+                pass
             device = None
             continue
 
@@ -215,7 +215,6 @@ def run(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--url", default=API_URL, help="web server /api/data URL")
-    parser.add_argument("--driver", choices=("ssd1306", "sh1106"), default="ssd1306")
     parser.add_argument("--address", type=lambda value: int(value, 0), default=I2C_ADDRESS)
     parser.add_argument("--preview", metavar="PNG",
                         help="save one frame as a PNG instead of using the OLED")

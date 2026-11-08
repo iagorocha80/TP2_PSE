@@ -29,9 +29,6 @@ This creates `.venv`, installs `requirements.txt` and starts both programs.
 Open `http://<raspberry-pi-ip>:5000` from another device on the network.
 `./run.sh web` and `./run.sh display` start only one of them.
 
-If the OLED shows shifted text or noise at the edges, its controller is an
-SH1106: run `python3 writeDisplay.py --driver sh1106`.
-
 ## Files
 
 | File | Role |
@@ -40,8 +37,10 @@ SH1106: run `python3 writeDisplay.py --driver sh1106`.
 | `webpage.py` | Flask server and sensor worker; the **only** process that reads the sensor |
 | `deviceinfo.py` | Model, serial, hostname, OS and IP of the Raspberry Pi |
 | `writeDisplay.py` | OLED output; reads `/api/data` from the web server |
+| `ssd1306_raw.py` | SSD1306 driver that writes to `/dev/i2c-1` directly (no I2C library) |
 | `scan_i2c.py` | I2C address scanner |
-| `deploy/tp2-webpage.service` | Optional systemd unit to start the web server at boot |
+| `measure_echo.py` | Raw HC-SR04 timing data (TRIG pulse, ECHO latency and duration) |
+| `deploy/*.service` | Optional systemd units to start the web server and the OLED program at boot |
 
 ## `/api/data`
 
